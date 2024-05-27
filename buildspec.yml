@@ -2,19 +2,20 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - echo Logginto into ECR
+      - echo Logging in to Amazon ECR....
       - aws --version
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725199104.dkr.ecr.us-east-1.amazonaws.com
+      #- $(aws ecr get-login --region ap-south-1 --no-include-email)
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725199104.dkr.ecr.us-east-1.amazonaws.com      - # Replace with this to your repository URI
       - REPOSITORY_URI=851725199104.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr
-      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $1}')
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | awk -F":" '{print $2}')
   build:
     commands:
-      - echo Build started on 'date'
-      - echo Building the jar file
+      - echo Build started on `date`
+      - echo building the Jar file
       - mvn clean install
-      - echo Building the docker image ..
+      - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:latest .
-      - docker tag $REPOSITORY_URI:latest $IMAGE_TAG
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
   post_build:
     commands:
       - echo Build completed on `date`
