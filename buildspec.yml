@@ -1,0 +1,32 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logginto into ECR
+      - aws --version
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 851725199104.dkr.ecr.us-east-1.amazonaws.com
+      - REPOSITORY_URI=851725199104.dkr.ecr.us-east-1.amazonaws.com/spring-demo-ecr
+      - IMAGE_TAG=build-$(echo $CODEBUILD_BUILD_ID | aws -F":"" '{print $2}')
+  build:
+    commands:
+      - echo Build started on 'date'
+      - echo Building the jar file
+      - mvn clean install
+      - echo Building the docker image ..
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $IMAGE_TAG
+  post_build:
+    commands:
+      - docker push $REPOSITORY_URI:latest
+      - docker push $IMAGE_TAG
+      - echo Writing Image Definition file ..
+      # Give your container name
+      - DOCKER_CONTAINER_NAME=spring-demo-ecr
+      - printf '[{"name":"%s","imageUri":"%s"}]' $DOCKER_CONTAINER_NAME $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - echo $DOCKER_CONTAINER_NAME
+      - echo printing imagedefinitions.json
+      - cat imagedefinitions.json
+artifacts:
+  files:
+    - imagedefinitions.json
+    - target/springboot-aws-deploy-pb.jar
